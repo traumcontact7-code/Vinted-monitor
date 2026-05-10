@@ -1,0 +1,39 @@
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+
+module.exports = {
+  data: new SlashCommandBuilder()
+    .setName('remove')
+    .setDescription('Supprimer une surveillance Vinted')
+    .addStringOption(opt =>
+      opt.setName('id')
+        .setDescription('ID de la surveillance (visible avec /list)')
+        .setRequired(true)),
+
+  async execute(interaction, client) {
+    await interaction.deferReply({ ephemeral: true });
+
+    const id = interaction.options.getString('id').toUpperCase();
+    const monitorInfo = client.monitors.getMonitorInfo(id, interaction.guildId);
+
+    if (!monitorInfo) {
+      return interaction.editReply(`❌ Aucune surveillance avec l'ID \`${id}\` trouvée sur ce serveur.`);
+    }
+
+    const stopped = client.monitors.stopMonitor(id, interaction.guildId);
+
+    if (stopped) {
+      const embed = new EmbedBuilder()
+        .setColor(0xFF4444)
+        .setTitle('🗑️ Surveillance supprimée')
+        .addFields(
+          { name: '🔍 Nom', value: monitorInfo.label, inline: true },
+          { name: '🆔 ID', value: `\`${id}\``, inline: true },
+        )
+        .setTimestamp();
+
+      await interaction.editReply({ embeds: [embed] });
+    } else {
+      await interaction.editReply('❌ Impossible de supprimer cette surveillance.');
+    }
+  },
+};
